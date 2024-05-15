@@ -1,10 +1,13 @@
+import numpy
 import tensorflow as tf
 import keras.src
 
 import numpy as np
 import matplotlib.pyplot as plt
+from PIL import Image
 
 
+# https://www.geeksforgeeks.org/how-to-convert-images-to-numpy-array/ used for image to numpy conversion
 # LOTS of help from this google tutorial
 # https://colab.research.google.com/github/tensorflow/docs/blob/master/site/en/tutorials/keras/classification.ipynb#scrollTo=oZTImqg_CaW1
 
@@ -15,6 +18,10 @@ class Model:
         self.test_img = self.test_img / 255.0
 
     @staticmethod
+    def evalCustomImage() -> numpy.ndarray:
+        img = Image.open("custom_training/num1.png")
+        return numpy.array(img)
+
     def displayData(self, count, img_list, label_list, predictions: bool):
         col, row = 7, 7
         if count > (col * row):
@@ -60,14 +67,17 @@ class HandWrittenNumbersModel(Model):
         model.fit(self.train_img, self.train_label)  # training the model
         self.model = model
 
-    def predict(self):  # Predicts and graphs 10 of the test images
+    def predict(self, CUSTOM_IMAGE=False):  # Predicts and graphs 10 of the test images
         prediction_model = keras.Sequential([self.model, keras.layers.Softmax()])
         predictions = prediction_model.predict(self.test_img)
         self.displayData(self, 49, self.test_img, predictions, True)
 
 
-m = HandWrittenNumbersModel()
-input("Ready? ")
-m.trainModel()
-input("Trained! Ready for the predictions? ")
-m.predict()
+# m = HandWrittenNumbersModel()
+model = Model(keras.datasets.mnist.load_data(path="mnist.npz"))
+image = model.evalCustomImage()
+model.displayData(1, image, [""], False)
+# input("Ready? ")
+# m.trainModel()
+# input("Trained! Ready for the predictions? ")
+# m.predict()
