@@ -5,6 +5,7 @@ import keras.src
 import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image
+import cv2 as cv
 
 
 # https://www.geeksforgeeks.org/how-to-convert-images-to-numpy-array/ used for image to numpy conversion
@@ -18,9 +19,13 @@ class Model:
         self.test_img = self.test_img / 255.0
 
     @staticmethod
-    def evalCustomImage() -> numpy.ndarray:
-        img = Image.open("custom_training/num1.png")
-        return numpy.array(img)
+    def evalCustomImage(index: int) -> numpy.ndarray:  # loads image, converts it to a numpy arary, and compresses it
+        img = Image.open(
+            f"custom_training/num{index}.png")  # https://stackoverflow.com/questions/48121916/numpy-resize-rescale-image resizing help
+        numpyImg = numpy.array(img)
+        numpyImg = numpyImg / 255.0
+        compressed = cv.resize(numpyImg, dsize=(28, 28), interpolation=cv.INTER_AREA)
+        return compressed
 
     def displayData(self, count, img_list, label_list, predictions: bool):
         col, row = 7, 7
@@ -67,17 +72,24 @@ class HandWrittenNumbersModel(Model):
         model.fit(self.train_img, self.train_label)  # training the model
         self.model = model
 
-    def predict(self, CUSTOM_IMAGE=False):  # Predicts and graphs 10 of the test images
+    def predict(self, CUSTOM_IMAGE: numpy.ndarray = None):  # Predicts and graphs 10 of the test images
         prediction_model = keras.Sequential([self.model, keras.layers.Softmax()])
-        predictions = prediction_model.predict(self.test_img)
-        self.displayData(self, 49, self.test_img, predictions, True)
+        if CUSTOM_IMAGE is not None:
+            pass
+            # Not working at the moment
+            # predictions = prediction_model.predict(CUSTOM_IMAGE)
+            # print(int(np.argmax(predictions)))
+            # self.displayData(1, [CUSTOM_IMAGE], ["1", "2"], False)
+        else:
+            predictions = prediction_model.predict(self.test_img)
+            self.displayData(49, self.test_img, predictions, True)
 
 
-# m = HandWrittenNumbersModel()
-model = Model(keras.datasets.mnist.load_data(path="mnist.npz"))
-image = model.evalCustomImage()
-model.displayData(1, image, [""], False)
-# input("Ready? ")
-# m.trainModel()
-# input("Trained! Ready for the predictions? ")
-# m.predict()
+m = HandWrittenNumbersModel()
+# model = Model(keras.datasets.mnist.load_data(path="mnist.npz"))
+
+# model.displayData(2, [model.evalCustomImage(1), model.evalCustomImage(2)], ["1", "2"], False)
+input("Ready? ")
+m.trainModel()
+input("Trained! Ready for the predictions? ")
+m.predict(CUSTOM_IMAGE=m.evalCustomImage(2))
