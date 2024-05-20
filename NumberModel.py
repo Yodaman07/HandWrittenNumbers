@@ -33,8 +33,14 @@ class HandWrittenNumbersModel(Model):
             CustomLabels = np.array([1, 2, 1, 2, 3, 4, 5, 6, 7, 8, 9, 7, 3, 5])  # num0 to num13
             predictions = prediction_model.predict(CustomImages)
             if UpdateTrainingData:
-                self.saveCustomImages(CustomImages,CustomLabels)
-            self.displayData(self, CustomImages, CustomLabels, predictions)
+                for i in range(len(CustomLabels)):
+                    prediction = predictions[i]
+                    if CustomLabels[i] == np.argmax(prediction):
+                        self.saveCustomImages(np.array([CustomImages[i]]), np.array([CustomLabels[i]]) )
+
+                self.displayData(self, CustomImages, CustomLabels, predictions, update=True)
+            else:
+                self.displayData(self, CustomImages, CustomLabels, predictions)
         else:
             predictions = prediction_model.predict(self.test_img)
             self.displayData(self, self.test_img[0:49], self.test_label[0:49], predictions)
