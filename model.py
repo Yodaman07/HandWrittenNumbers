@@ -1,17 +1,18 @@
 import PIL.ImageOps
-import numpy
-import tensorflow as tf
-import keras.src
+import matplotlib.image
 
 import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image
 import cv2 as cv
+import os
 
 
 # https://www.geeksforgeeks.org/how-to-convert-images-to-numpy-array/ used for image to numpy conversion
 # LOTS of help from this google tutorial
 # https://colab.research.google.com/github/tensorflow/docs/blob/master/site/en/tutorials/keras/classification.ipynb#scrollTo=oZTImqg_CaW1
+# https://stackoverflow.com/questions/12201577/how-can-i-convert-an-rgb-image-into-grayscale-in-python <-- explains color channels with image loading
+# https://stackoverflow.com/questions/48121916/numpy-resize-rescale-image resizing help
 
 class Model:
     def __init__(self, dataset):
@@ -19,27 +20,58 @@ class Model:
         self.train_img = self.train_img / 255.0
         self.test_img = self.test_img / 255.0
 
-    @staticmethod  # count is the number of images to set up for the model, start is for defining a new beginning index, the default one is 0
-    def evalCustomImages(count: int,
-                         start: int = 0) -> numpy.ndarray:  # loads images individually, converts it to a numpy array in grayscale, compresses it and groups them together
+    # Loads images individually, makes it grayscale it in a numpy array and compressed it
+
+    # Count = num of images set up for the model
+    # Start = new beginning index (default is 0)
+    @staticmethod
+    def evalCustomImages(count: int, start: int = 0) -> np.ndarray:
         group = []
         for i in range(start, count + start):
             img = Image.open(
-                f"custom_predictions/num{i}.png").convert(
-                "L")  # https://stackoverflow.com/questions/48121916/numpy-resize-rescale-image resizing help
-            img = PIL.ImageOps.invert(img)  # implement auto invert
-            numpyImg = numpy.array(
-                img)  # https://stackoverflow.com/questions/12201577/how-can-i-convert-an-rgb-image-into-grayscale-in-python <-- explains color channels with image loading
-            compressed = cv.resize(numpyImg, dsize=(28, 28), interpolation=cv.INTER_AREA)
+                f"custom_predictions/num{i}.png").convert("L")
+            img = PIL.ImageOps.invert(img)  # TODO: implement auto invert
 
+            npImg = np.array(img)
+            compressed = cv.resize(npImg, dsize=(28, 28), interpolation=cv.INTER_AREA)
             group.append(compressed)
 
-        groupedImages = numpy.array(group)
+        groupedImages = np.array(group)
         groupedImages = groupedImages / 255.0
         return groupedImages
 
+    # Only works with CUSTOM IMAGES not the testing images
+    @staticmethod
+    def saveCustomImages(images: np.ndarray, label):  # `images` are grayscale
+        # Gets the last used index
+        files = os.listdir("custom_training")
+
+
+        # Saves images
+        currentSize = len(files)
+        index = 0
+        for c, l in enumerate(label):  # loops over every custom image
+            dupe = False  # `dupe` = duplicate image
+            img = Image.fromarray(images[c] * 255).convert("L")
+            # Checks for duplicates and overwrites files if needed
+            for i in files:  # loops over every already saved image
+                existingImg = Image.open("custom_training/" + i)
+                # img = cv.imread("custom_training/" + i)
+                dupe = (np.array(existingImg) == np.array(img)).all()
+                if dupe: break
+            if not dupe:
+                img.save(f"custom_training/TRAINING_{currentSize + index}_{l}.png")
+                index += 1
+                # img.save(f"custom_training/TRAINING_{c + nextIndex}_{l}.png", images[c])
+                # matplotlib.image.imsave(f"custom_training/TRAINING_{c + nextIndex}_{l}.png", images[c])
+
+    # Updates self.train_img and self.train_label to contain the images/labels from custom_training
+    def updateTrainingData(self):
+        pass
+
     @staticmethod  # img_list and label_list are the original labels and images. Predictions will be the predicted values
-    def displayData(self, count, img_list, label_list, predictions: [] = None):
+    def displayData(self, img_list, label_list, predictions: [] = None):
+        count = len(label_list)
         col, row = 7, 7
         if count > (col * row):
             print("Cannot render: see the column and row counts for a possible fix")
@@ -54,57 +86,14 @@ class Model:
                 plt.xlabel(label_list[i])
             else:
                 prediction = predictions[i]
-                # print(i)
-                # print(prediction)
                 num = int(np.argmax(prediction))
                 percentage = np.max(prediction) * 100
                 color = 'red'
                 if num == int(label_list[i]):
                     color = 'blue'
                 else:
-                    print(num, label_list[i])
+                    # print(num, label_list[i])
+                    pass
                 plt.xlabel(f"{self.classNames[num]} ; {np.round(percentage, 2)}").set_color(color)
 
         plt.show()
-
-
-class HandWrittenNumbersModel(Model):
-    def __init__(self):
-        super().__init__(keras.datasets.mnist.load_data(path="mnist.npz"))
-        self.classNames = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
-
-        self.model = None
-
-    def trainModel(self):
-        model = keras.Sequential([
-            keras.layers.Flatten(input_shape=(28, 28)),
-            keras.layers.Dense(258, activation="relu"),
-            keras.layers.Dense(10)
-        ])  # setting up the model
-        model.compile(optimizer="Adam", loss=keras.losses.SparseCategoricalCrossentropy(from_logits=True),
-                      metrics=['accuracy'])  # compiling everything, now ready to train the model
-        model.fit(self.train_img, self.train_label)  # training the model
-        self.model = model
-
-    def predict(self, CUSTOM_IMAGE: numpy.ndarray = None):  # Predicts and graphs test images
-        #  If CUSTOM_IMAGE is left blank, program will use the default testing images
-        prediction_model = keras.Sequential([self.model, keras.layers.Softmax()])
-        if CUSTOM_IMAGE is not None:
-            labels = numpy.array([1, 2, 1, 2, 3, 4, 5, 6, 7, 8, 9, 7]) # num0 to num11
-            predictions = prediction_model.predict(CUSTOM_IMAGE)
-            self.displayData(self, 2, CUSTOM_IMAGE, [3, 5],
-                             predictions)
-        else:
-            predictions = prediction_model.predict(self.test_img)
-            self.displayData(self, 49, self.test_img, self.test_label, predictions)
-
-
-m = HandWrittenNumbersModel()
-# model = Model(keras.datasets.mnist.load_data(path="mnist.npz"))
-# model.evalCustomImages(2)
-# model.displayData(2, model.evalCustomImages(2), ["1", "2"], False)
-input("Ready? ")
-m.trainModel()
-input("Trained! Ready for the predictions? ")
-m.predict(m.evalCustomImages(2, 12))
-
