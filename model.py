@@ -46,7 +46,6 @@ class Model:
         # Gets the last used index
         files = os.listdir("custom_training")
 
-
         # Saves images
         currentSize = len(files)
         index = 0
@@ -56,14 +55,11 @@ class Model:
             # Checks for duplicates and overwrites files if needed
             for i in files:  # loops over every already saved image
                 existingImg = Image.open("custom_training/" + i)
-                # img = cv.imread("custom_training/" + i)
                 dupe = (np.array(existingImg) == np.array(img)).all()
                 if dupe: break
             if not dupe:
                 img.save(f"custom_training/TRAINING_{currentSize + index}_{l}.png")
                 index += 1
-                # img.save(f"custom_training/TRAINING_{c + nextIndex}_{l}.png", images[c])
-                # matplotlib.image.imsave(f"custom_training/TRAINING_{c + nextIndex}_{l}.png", images[c])
 
     # Updates self.train_img and self.train_label to contain the images/labels from custom_training
     def updateTrainingData(self):
