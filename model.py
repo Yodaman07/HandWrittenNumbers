@@ -42,7 +42,7 @@ class Model:
 
     # Only works with CUSTOM IMAGES not the testing images
     @staticmethod
-    def saveCustomImages(images: np.ndarray, label : np.ndarray):  # `images` are grayscale
+    def saveCustomImages(images: np.ndarray, label: np.ndarray):  # `images` are grayscale
         # Gets the last used index
         files = os.listdir("custom_training")
 
@@ -62,11 +62,21 @@ class Model:
                 index += 1
 
     # Updates self.train_img and self.train_label to contain the images/labels from custom_training
-    def updateTrainingData(self):
-        pass
+    @staticmethod
+    def updateTrainingData() -> [np.ndarray, np.ndarray]:
+        imgGroup = []
+        labelGroup = []
+        files = os.listdir("custom_training")
+        for i in files:
+            img = Image.open("custom_training/" + i)
+            imgGroup.append(np.array(img))
+            labelGroup.append(int(i[-5]))
+        allImages = np.array(imgGroup)
+        allLabels = np.array(labelGroup)
+        return [allImages, allLabels]
 
     @staticmethod  # img_list and label_list are the original labels and images. Predictions will be the predicted values
-    def displayData(self, img_list, label_list, predictions: [] = None, update : bool = False):
+    def displayData(self, img_list, label_list, predictions: [] = None, update: bool = False):
         count = len(label_list)
         col, row = 7, 7
         if count > (col * row):
